@@ -10,7 +10,7 @@ dependencies = [
     "instructor>=1.14.3",
     "ipykernel>=7.1.0",
     "pdfplumber>=0.11.9",
-    "pyarrow<13",
+    "pyarrow>=14",
     "pydantic-settings>=2.12.0",
     "pydantic[email]>=2.12.5",
     "python-multipart>=0.0.21",

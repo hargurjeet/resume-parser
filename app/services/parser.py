@@ -1,33 +1,27 @@
 from pathlib import Path
 from typing import Optional, Union
 
-import boto3
 import pdfplumber
 import instructor
+from openai import OpenAI
 from pydantic import ValidationError
 
 from app.models.resume import ParsedResume
 from app.core.config import settings
 
 
-class BedrockResumeParser:
-    """
-    Resume parser using AWS Bedrock Claude with tool-based structured output
-    and Pydantic validation.
-    """
+class FireworksResumeParser:
 
     def __init__(self):
-        bedrock_client = boto3.client(
-            service_name="bedrock-runtime",
-            region_name=settings.aws_region,
+        openai_client = OpenAI(
+            base_url=settings.fireworks_base_url,
+            api_key=settings.fireworks_api_key,
         )
-
-        self.client = instructor.from_bedrock(
-            client=bedrock_client,
-            mode=instructor.Mode.BEDROCK_TOOLS,
+        self.client = instructor.from_openai(
+            openai_client,
+            mode=instructor.Mode.JSON,
         )
-
-        self.model_id = settings.bedrock_model_id
+        self.model_id = settings.fireworks_model_id
 
     def extract_text_from_pdf(self, pdf_path: Union[str, Path]) -> str:
         text = ""
@@ -78,7 +72,7 @@ Resume:
                 messages=[
                     {
                         "role": "system",
-                        "content": "Extract structured resume data using tool calls.",
+                        "content": "Extract structured resume data and return valid JSON.",
                     },
                     {
                         "role": "user",
@@ -86,7 +80,6 @@ Resume:
                     },
                 ],
             )
-
             return parsed_resume, None
 
         except ValidationError as e:

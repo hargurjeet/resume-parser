@@ -3,12 +3,12 @@ from pathlib import Path
 import shutil
 import uuid
 
-from app.services.parser import BedrockResumeParser
+from app.services.parser import FireworksResumeParser
 from app.models.resume import ParsedResume
 
 router = APIRouter(prefix="/resume", tags=["Resume Parser"])
 
-parser_service = BedrockResumeParser()
+parser_service = FireworksResumeParser()
 
 
 @router.post("/parse", response_model=ParsedResume)

@@ -41,7 +41,7 @@ class Certification(BaseModel):
 
 class Project(BaseModel):
     title: str = Field(min_length=1)
-    description: str = Field(min_length=1)
+    description: Optional[str] = None
     technologies: List[str] = Field(default_factory=list)
     url: Optional[str] = None
     date: Optional[str] = None
