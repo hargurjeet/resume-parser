@@ -9,7 +9,9 @@ echo "Starting Streamlit..."
 streamlit run streamlit_ui/ui.py \
   --server.port 8501 \
   --server.address 0.0.0.0 \
-  --server.headless true &
+  --server.headless true \
+  --server.enableXsrfProtection false \
+  --server.enableCORS false &
 
 wait
 
