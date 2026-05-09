@@ -41,7 +41,7 @@ curl -X POST "http://localhost:8000/resume/parse" \
 | 400 | File is not a PDF |
 | 400 | PDF is invalid or unreadable |
 | 400 | Extracted text is empty or too short (<20 chars) |
-| 400 | Bedrock/instructor validation failed |
+| 400 | Fireworks/instructor validation failed after retries |
 
 Error body:
 ```json
@@ -54,7 +54,7 @@ Error body:
 
 1. Validates `.pdf` extension
 2. Writes upload to `/tmp/<uuid>.pdf`
-3. Calls `BedrockResumeParser.parse_resume(path)`
+3. Calls `FireworksResumeParser.parse_resume(path)`
 4. Deletes temp file (`unlink(missing_ok=True)`)
 5. Returns parsed result or raises 400 with error detail
 

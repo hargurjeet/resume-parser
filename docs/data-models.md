@@ -81,7 +81,7 @@ class Certification(BaseModel):
 ```python
 class Project(BaseModel):
     title: str              # required
-    description: str        # required
+    description: Optional[str] = None   # optional — resumes often list projects by title only
     technologies: List[str]
     url: Optional[str]
     date: Optional[str]
@@ -94,4 +94,5 @@ class Project(BaseModel):
 - `gpa` is bounded: 0.0–4.0
 - `years_of_experience` is bounded: 0–50
 - All list fields default to `[]` via `Field(default_factory=list)` — never `None`
-- Claude is instructed not to infer missing information, so missing fields will correctly come back as `null`/omitted
+- `Project.description` is `Optional` — Llama returns `null` for projects with title-only entries; making it required caused repeated instructor retry failures
+- Llama is instructed not to infer missing information, so missing fields correctly come back as `null`/omitted
