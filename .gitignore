@@ -13,3 +13,6 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Binary files (rejected by Hugging Face Spaces without LFS)
+*.pdf
