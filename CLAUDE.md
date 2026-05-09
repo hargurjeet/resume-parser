@@ -12,9 +12,9 @@ A PDF resume parsing application. Users upload a PDF resume → text is extracte
 - **Structured output**: `instructor` library with `Mode.JSON` via OpenAI-compatible Fireworks client
 - **PDF extraction**: `pdfplumber`
 - **Package manager**: `uv` (see `pyproject.toml` + `uv.lock`)
-- **Deployment**: Single Docker container running both services via `start.sh`
+- **Deployment**: Single Docker container (HF Spaces) + GitHub Action for auto-sync
 
-> **Migration note**: Originally used AWS Bedrock (Claude 3.7 Sonnet). Switched to Fireworks AI for cost — Bedrock subscription was unavailable. Fireworks uses the OpenAI-compatible API so `instructor.from_openai()` is used instead of `instructor.from_bedrock()`.
+> **Migration note**: Originally used AWS Bedrock (Claude 3.7 Sonnet). Switched to Fireworks AI for cost — Bedrock subscription was unavailable.
 
 ## Key Files
 
@@ -27,10 +27,13 @@ A PDF resume parsing application. Users upload a PDF resume → text is extracte
 | `app/core/config.py` | Settings (Fireworks API key, model ID, base URL) via pydantic-settings |
 | `app/utils/pdf.py` | Standalone PDF extraction helper (not wired in — parser has its own method) |
 | `streamlit_ui/ui.py` | Streamlit frontend — upload PDF, call API, display results |
-| `Dockerfile` | Python 3.10-slim, exposes 8000 + 8501 |
-| `start.sh` | Starts uvicorn + streamlit in parallel |
+| `.streamlit/config.toml` | Disables XSRF + CORS protection — required for file upload on HF Spaces |
+| `Dockerfile` | Python 3.10-slim, copies `.streamlit/`, exposes 8000 + 8501 |
+| `start.sh` | Starts uvicorn + streamlit with XSRF/CORS flags disabled |
+| `README.md` | Contains HF Spaces YAML frontmatter (sdk: docker, app_port: 8501) |
+| `.github/workflows/sync-to-hf.yml` | GitHub Action — syncs repo to HF Spaces on every push to main |
 | `.env` | Git-ignored — must be created locally with `FIREWORKS_API_KEY` |
-| `.gitignore` | Excludes `.env`, `__pycache__`, `.venv`, `.ipynb_checkpoints`, `.DS_Store` |
+| `.gitignore` | Excludes `.env`, `__pycache__`, `.venv`, `.ipynb_checkpoints`, `*.pdf` |
 | `uv.lock` | Locked dependency tree for reproducible installs |
 
 ## Data Flow
@@ -59,8 +62,24 @@ Key schema decisions:
 ## Fireworks AI / Credentials
 
 - API key set via `FIREWORKS_API_KEY` in `.env` (git-ignored — never committed)
+- On HF Spaces: set `FIREWORKS_API_KEY` as a Space secret in Settings → Variables and secrets
 - Base URL: `https://api.fireworks.ai/inference/v1` (OpenAI-compatible)
-- Model: `accounts/fireworks/models/llama-v3p3-70b-instruct` (override via `FIREWORKS_MODEL_ID` in `.env`)
+- Model: `accounts/fireworks/models/llama-v3p3-70b-instruct` (override via `FIREWORKS_MODEL_ID`)
+
+## Deployment — Hugging Face Spaces
+
+- **Space**: https://huggingface.co/spaces/Hargurjeet/Resume_parser
+- **SDK**: Docker (`sdk: docker` in README frontmatter)
+- **Exposed port**: 8501 (Streamlit) — only this port is accessible from outside
+- **Auto-sync**: `.github/workflows/sync-to-hf.yml` uploads files to HF on every push to `main` using `huggingface_hub.upload_folder()` (REST API, not git — avoids binary file restrictions)
+- **Required GitHub secret**: `HF_TOKEN` (Hugging Face write token)
+- **Required HF Space secret**: `FIREWORKS_API_KEY`
+
+### HF Spaces known issue — file upload 403
+HF Spaces proxies Streamlit traffic. Without config, Streamlit's XSRF protection causes a 403 on PDF upload. Fixed in two places:
+1. `.streamlit/config.toml` — `enableXsrfProtection = false`, `enableCORS = false`
+2. `start.sh` — passes `--server.enableXsrfProtection false --server.enableCORS false`
+The Dockerfile must copy `.streamlit/` (`COPY .streamlit ./.streamlit`) — forgetting this was the original root cause.
 
 ## Known Gaps / Notes
 
@@ -68,7 +87,7 @@ Key schema decisions:
 - `archieve/` contains prototype Jupyter notebooks and legacy stubs (not production code)
 - No tests exist yet
 - CORS is wide open (`allow_origins=["*"]`) — tighten for production
-- UI is functional but basic — Next.js migration considered for a more polished look
+- UI is functional but basic — Next.js migration planned for a more polished look (plan exists in `.claude/plans/`)
 
 ## Running Locally
 
@@ -92,4 +111,4 @@ See `docs/` for deeper references:
 - `docs/architecture.md` — full system design and data flow
 - `docs/data-models.md` — all Pydantic models documented
 - `docs/api.md` — API endpoint reference
-- `docs/setup.md` — local and Docker setup guide
+- `docs/setup.md` — local, Docker, and HF Spaces setup guide

@@ -66,6 +66,30 @@ Single file (`ui.py`). Responsibilities:
 Both services run in a single container:
 - `start.sh` launches `uvicorn` (FastAPI) on port 8000, then `streamlit` on port 8501
 - `Dockerfile` uses `python:3.10-slim` with `poppler-utils` for PDF support
+- `.streamlit/config.toml` is copied into the image — required to disable XSRF/CORS for HF Spaces
+
+### Hugging Face Spaces
+
+Deployed at: https://huggingface.co/spaces/Hargurjeet/Resume_parser
+
+```
+GitHub repo (main branch)
+    │
+    │  push triggers
+    ▼
+.github/workflows/sync-to-hf.yml
+    │  huggingface_hub.upload_folder() — REST API, not git
+    ▼
+HF Space (Docker)
+    │  builds from Dockerfile
+    ▼
+Container: uvicorn :8000 + streamlit :8501
+    │  HF proxies only port 8501
+    ▼
+User browser → https://hargurjeet-resume-parser.hf.space
+```
+
+**HF Spaces 403 fix**: Streamlit's XSRF protection conflicts with HF's reverse proxy. Disabled via `.streamlit/config.toml` AND `--server.enableXsrfProtection false` flag in `start.sh`. The Dockerfile must include `COPY .streamlit ./.streamlit` or the config file is never picked up.
 
 ## How `instructor` Works Here
 
