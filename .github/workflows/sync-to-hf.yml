@@ -12,13 +12,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
 
       - name: Push to Hugging Face Spaces
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git remote add hf https://Hargurjeet:${HF_TOKEN}@huggingface.co/spaces/Hargurjeet/Resume_parser
-          git push hf main --force
+          # Push only current snapshot (no history) to avoid HF rejecting
+          # binary files that exist in older commits
+          git checkout --orphan hf-sync
+          git add -A
+          git commit -m "Sync from GitHub"
+          git push https://Hargurjeet:${HF_TOKEN}@huggingface.co/spaces/Hargurjeet/Resume_parser hf-sync:main --force
